@@ -78,6 +78,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.net.PortForwarder;
+import edu.wpi.first.units.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -289,6 +290,7 @@ public class RobotContainer {
     public static final double ENDGAME_ELEVATOR_FEEDFORWARD = 0.0;
     public static final boolean ENDGAME_ELEVATOR_LIMITFORWARDMOTION = false;
     public static final boolean ENDGAME_ELEVATOR_LIMITREVERSEMOTION = false;
+    private static final boolean DELTA_LOGGING_ENABLED = true;
 
     //--VisionSTDsDevConstants--\\
     // TODO configure for april tag confidence level 
@@ -609,11 +611,39 @@ public class RobotContainer {
   }
 
   public void robotPeriodic() {
+    double fpgaTimestampStart = Timer.getFPGATimestamp();
     updateAllVision();
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      
+      e.printStackTrace();
+    }
+    fpgaTimestampStart=logTimestamp(fpgaTimestampStart, "updateAllVision", this);
+
     m_mechViewer.periodic();
+    fpgaTimestampStart = logTimestamp(fpgaTimestampStart, "mechViewer", this);
+   
     Logger.recordOutput(SpeakerScoreUtility.class.getSimpleName() + "/distance", SpeakerScoreUtility.inchesToSpeaker());
     Logger.recordOutput(SpeakerScoreUtility.class.getSimpleName() + "/inverseTanPivotAngleUnimplemented", 
       SpeakerScoreUtility.computePivotAngleInverseTan(SpeakerScoreUtility.inchesToSpeaker()));
+    fpgaTimestampStart=logTimestamp(fpgaTimestampStart, "speakerScoreCalc", this);
+    
+  }
+  /**Creates a method for logging the Delta Time in the console. Can be disabled in the constants. 
+   * 
+   * @param startTimestamp
+   * @param loggerName
+   * @return
+   */
+  public double logTimestamp(double startTimestamp, String loggerName, Object classObject){
+    double timestamp =0;
+    if(DELTA_LOGGING_ENABLED){
+      timestamp = Timer.getFPGATimestamp();
+      
+      Logger.recordOutput(classObject.getClass().getSimpleName()+ "/"+loggerName, startTimestamp-timestamp);
+    }
+    return timestamp;
   }
 
   /*
